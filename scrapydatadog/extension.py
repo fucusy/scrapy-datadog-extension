@@ -113,8 +113,13 @@ class DatadogExtension(object):
         return '{}.{}'.format(self.dd_metric_prefix, sane_key)
 
     def commit(self, metrics):
-        res = datadog.api.Metric.send(metrics)
-        logger.debug('API call result: {}'.format(res))
+        for m in metrics:
+            if type(m['points']) is str or type(m['points']) is unicode:
+                key = "{}.{}".format(m['metric'], m['points'])
+                res = statsd.increment(key, 1, m['tags'])
+            else:
+                res = datadog.api.Metric.send([m])
+                logger.debug('API call result: {}'.format(res))
 
     def publish_status(self, spider_name, finish_reason, tags):
         status = ext_settings.DD_STATUS_MAPPING.get(finish_reason, CheckStatus.UNKNOWN)
